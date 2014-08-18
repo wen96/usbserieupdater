@@ -1,5 +1,6 @@
 #! python
 import sys
+import os
 import re
 
 
@@ -22,22 +23,15 @@ class ArgvProcessor:
             print "TO-DO"
         elif cls.n_arguments is 4:
             cls.ARGUMENTS_MODE = 1
-            if not cls.is_chapter(cls.chapter_str()):
-                raise ArgumentException("The chapter format must be: SxC\n" +
-                                        "\t Where S is seasson number and C " +
-                                        "is chapter number")
 
-            ChapterUpdater(
-                path_from=cls.path_from(),
-                path_to=cls.path_to(),
-                seasson=cls.seasson(),
-                chapter=cls.chapter()).run()
+            chapter = Chapter(cls.chapter_str())
+            updater = ChapterUpdater()
+            updater.ath_from = cls.path_from()
+            updater.path_to = cls.path_to()
+            updater.chapter = chapter
+            updater.run()
         else:
             raise ArgumentException("Bad syntax in parameters")
-
-    @classmethod
-    def is_chapter(cls, chapter):
-        return re.match("^([0-9])+x([0-9])+$", chapter)
 
     @classmethod
     def path_from(cls):
@@ -54,14 +48,6 @@ class ArgvProcessor:
         else:
             return sys.argv[1]
 
-    @classmethod
-    def seasson(cls):
-        return int(cls.chapter_str().split("x")[0])
-
-    @classmethod
-    def chapter(cls):
-        return int(cls.chapter_str().split("x")[1])
-
 
 class ArgumentException(Exception):
     def __init__(self, value):
@@ -71,14 +57,52 @@ class ArgumentException(Exception):
         return repr(self.value)
 
 
-class ChapterUpdater():
+class ChapterUpdater:
     path_from = ""
     path_to = ""
-    seasson = 0
-    chapter = 0
+    chapter = None
 
     def run(self):
-        pass
+        self.remove_before()
+
+    def remove_before(self):
+        for filename in os.listdir(self.path_to):
+            chapter_str = re.search(Chapter.regex_chapter, filename)
+            if chapter_str:
+                chapter_str = chapter_str.group(0)
+                if Chapter(chapter_str) < self.chapter:
+                    print "Removing " + filename
+                    os.remove(self.path_to + filename)
+
+
+class Chapter:
+    seasson = 0
+    chapter = 0
+    regex_chapter = "([0-9])+x([0-9])+"
+
+    def __init__(self, chapter_string):
+        if not self.is_chapter(chapter_string):
+            raise ArgumentException("The chapter format must be: SxC\n" +
+                                    "\t Where S is seasson number and C " +
+                                    "is chapter number")
+        self.seasson = self.seasson(chapter_string)
+        self.chapter = self.chapter(chapter_string)
+
+    def is_chapter(self, chapter):
+        complete_regex = "^" + self.regex_chapter + "$"
+        return re.match(complete_regex, chapter)
+
+    def seasson(self, chapter_string):
+        return int(chapter_string.split("x")[0])
+
+    def chapter(self, chapter_string):
+        return int(chapter_string.split("x")[1])
+
+    def __lt__(self, other):
+        if (self.seasson == other.seasson):
+            return self.chapter < other.chapter
+        else:
+            return self.seasson < other.seasson
 
 
 try:
