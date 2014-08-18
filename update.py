@@ -2,6 +2,9 @@
 import sys
 import os
 import re
+import ctypes
+import platform
+import shutil
 
 
 class ArgvProcessor:
@@ -26,7 +29,7 @@ class ArgvProcessor:
 
             chapter = Chapter(cls.chapter_str())
             updater = ChapterUpdater()
-            updater.ath_from = cls.path_from()
+            updater.path_from = cls.path_from()
             updater.path_to = cls.path_to()
             updater.chapter = chapter
             updater.run()
@@ -64,15 +67,49 @@ class ChapterUpdater:
 
     def run(self):
         self.remove_before()
+        self.copy_news()
+
+    def copy_news(self):
+        for filename in os.listdir(self.path_from):
+            chapter_str = self.extract_chapter_str(filename)
+            if Chapter(chapter_str) >= self.chapter:
+                if not self.is_in_destination(filename):
+                    if self.destination_have_engouth_space(filename):
+                        print "Copying " + filename
+                        shutil.copyfile(self.path_from + filename,
+                                        self.path_to + filename)
+
+    def destination_have_engouth_space(self, new_chapter):
+        new_file_complete_path = self.path_from + new_chapter
+        return FilesystemHelper.get_size_bytes(new_file_complete_path) <\
+            self.device_size()
+
+    def is_in_destination(self, filename):
+        chapter_str = self.extract_chapter_str(filename)
+        new_chapter = Chapter(chapter_str)
+        for filename in os.listdir(self.path_to):
+            chapter_str = self.extract_chapter_str(filename)
+            if chapter_str:
+                if Chapter(chapter_str) == new_chapter:
+                    return True
+
+    def device_size(self):
+        return FilesystemHelper.get_free_space_bytes(self.path_to)
 
     def remove_before(self):
         for filename in os.listdir(self.path_to):
-            chapter_str = re.search(Chapter.regex_chapter, filename)
+            chapter_str = self.extract_chapter_str(filename)
             if chapter_str:
-                chapter_str = chapter_str.group(0)
                 if Chapter(chapter_str) < self.chapter:
                     print "Removing " + filename
                     os.remove(self.path_to + filename)
+
+    def extract_chapter_str(self, string_file):
+        chapter_str = re.search(Chapter.regex_chapter, string_file)
+        if chapter_str:
+            return chapter_str.group(0)
+        else:
+            return None
 
 
 class Chapter:
@@ -84,7 +121,8 @@ class Chapter:
         if not self.is_chapter(chapter_string):
             raise ArgumentException("The chapter format must be: SxC\n" +
                                     "\t Where S is seasson number and C " +
-                                    "is chapter number")
+                                    "is chapter number. Get it " +
+                                    chapter_string)
         self.seasson = self.seasson(chapter_string)
         self.chapter = self.chapter(chapter_string)
 
@@ -104,6 +142,31 @@ class Chapter:
         else:
             return self.seasson < other.seasson
 
+    def __ge__(self, other):
+        return not self < other
+
+    def __eq__(self, other):
+        return self.chapter == other.chapter and self.seasson == other.seasson
+
+
+class FilesystemHelper:
+    @classmethod
+    def get_free_space_bytes(cls, folder):
+        """ Return folder/drive free space (in bytes)
+        """
+        if platform.system() == 'Windows':
+            free_bytes = ctypes.c_ulonglong(0)
+            ctypes.windll.kernel32.GetDiskFreeSpaceExW(
+                ctypes.c_wchar_p(folder), None, None, ctypes.pointer(
+                    free_bytes))
+            return free_bytes.value
+        else:
+            st = os.statvfs(folder)
+            return st.f_bavail * st.f_frsize
+
+    @classmethod
+    def get_size_bytes(cls, file):
+        return os.stat(file).st_size
 
 try:
     ArgvProcessor.process()
