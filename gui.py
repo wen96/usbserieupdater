@@ -1,32 +1,28 @@
-#!/usr/bin/kivy
-
 import kivy
 kivy.require('1.8.0')
 
+from kivy.uix.floatlayout import FloatLayout
 from kivy.app import App
-from kivy.uix.gridlayout import GridLayout
-from kivy.uix.label import Label
-from kivy.uix.textinput import TextInput
+from kivy.properties import ObjectProperty, StringProperty
 
 
-class LoginScreen(GridLayout):
+class Controller(FloatLayout):
+    '''Create a controller that receives a custom widget from the kv lang file.
 
-    def __init__(self, **kwargs):
-        super(LoginScreen, self).__init__(**kwargs)
-        self.cols = 2
-        self.add_widget(Label(text='User Name'))
-        self.username = TextInput(multiline=False)
-        self.add_widget(self.username)
-        self.add_widget(Label(text='password'))
-        self.password = TextInput(password=True, multiline=False)
-        self.add_widget(self.password)
+    Add an action to be called from the kv lang file.
+    '''
+    label_wid = ObjectProperty()
+    info = StringProperty()
+
+    def do_action(self):
+        self.label_wid.text = 'My label after button press'
+        self.info = 'New info text'
 
 
-class MyApp(App):
+class ControllerApp(App):
 
     def build(self):
-        return LoginScreen()
-
+        return Controller(info='Hello world')
 
 if __name__ == '__main__':
-    MyApp().run()
+    ControllerApp().run()
