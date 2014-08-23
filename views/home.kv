@@ -1,16 +1,34 @@
 #:kivy 1.0
 
-<Controller>:
-    label_wid: my_custom_label
-
-    BoxLayout:
-        orientation: 'vertical'
-        padding: 20
+<TopBar@Screen>:
+    GridLayout:
+        cols: 6
 
         Button:
-            text: 'My controller info is : ' + root.info
-            on_press: root.do_action()
+            text: 'usb'
 
-        Label:
-            id: my_custom_label
-            text: 'My label before button press'
+        Button:
+            text: 'Watcher'
+
+        Widget:
+        Widget:
+        Widget:
+        Button:
+            text: 'Menu'
+
+<MainScreen>:
+    canvas.before:
+        Color:
+            rgba: 1, .2, .2, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+    GridLayout:
+        rows: 2
+
+        TopBar:
+
+        Widget:
+            size_hint_y: None
+            height: 500
