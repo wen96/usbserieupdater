@@ -72,12 +72,13 @@ class ChapterUpdater:
     def copy_news(self):
         for filename in os.listdir(self.path_from):
             chapter_str = self.extract_chapter_str(filename)
-            if Chapter(chapter_str) >= self.chapter:
-                if not self.is_in_destination(filename):
-                    if self.destination_have_engouth_space(filename):
-                        print "Copying " + filename
-                        shutil.copyfile(self.path_from + filename,
-                                        self.path_to + filename)
+            if chapter_str:
+                if Chapter(chapter_str) >= self.chapter:
+                    if not self.is_in_destination(filename):
+                        if self.destination_have_engouth_space(filename):
+                            print "Copying " + filename
+                            shutil.copyfile(self.path_from + filename,
+                                            self.path_to + filename)
 
     def destination_have_engouth_space(self, new_chapter):
         new_file_complete_path = self.path_from + new_chapter
